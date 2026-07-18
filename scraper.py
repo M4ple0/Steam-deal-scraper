@@ -1,23 +1,27 @@
-import bs4
-import urllib.request
-import re
+import requests
 
-prices_list = [] # stores the price of the game in a list
-def check_price():
-    url = "https://store.steampowered.com/app/1297900/Gothic_1_Remake/"
+price_list = []
 
-    req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-    sauce = urllib.request.urlopen(url).read()
-    soup = bs4.BeautifulSoup(sauce, 'html.parser')
+def check_all_sales(region="ca"):
+    url = f"https://store.steampowered.com/api/featuredcategories?cc={region}&l=english"
+    response = requests.get(url)
+    data = response.json()
 
-    price_div = soup.find('div', class_='game_purchase_price price')
+    specials = data["specials"]["items"]
 
-    if price_div:
-        price_text = price_div.text.strip()
-        price_clean = re.sub(r'[^\d.]', '', price_text)  # removes any non-number characters except the decimal point
-        price = float(price_clean)
-        print(price, type(price))
-    else:
-        print("Price not found.")
+    for game in specials:
+        name = game["name"]
+        discount = game["discount_percent"]
+        final_price = game["final_price"] / 100  # Convert from cents to dollars
+        original_price = game["original_price"] / 100  # Convert from cents to dollars
 
-check_price()
+        price_list.append({
+            "name": name,
+            "discount": discount,
+            "final_price": final_price,
+            "original_price": original_price
+        })
+
+        print(f"{name}: ${final_price} (was ${original_price}), {discount}% off")
+
+check_all_sales()
